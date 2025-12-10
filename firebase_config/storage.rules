@@ -1,0 +1,59 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isImageFile() {
+      return request.resource.contentType.matches('image/.*');
+    }
+    
+    function isValidSize() {
+      return request.resource.size < 5 * 1024 * 1024; // 5MB
+    }
+    
+    // User profile images
+    match /users/{userId}/profile/{fileName} {
+      allow read: if true;
+      allow write: if isAuthenticated() && 
+                      request.auth.uid == userId && 
+                      isImageFile() && 
+                      isValidSize();
+    }
+    
+    // Worker profile images
+    match /workers/{workerId}/profile/{fileName} {
+      allow read: if true;
+      allow write: if isAuthenticated() && 
+                      request.auth.uid == workerId && 
+                      isImageFile() && 
+                      isValidSize();
+    }
+    
+    // Worker verification documents
+    match /workers/{workerId}/documents/{fileName} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && 
+                      request.auth.uid == workerId && 
+                      isValidSize();
+    }
+    
+    // Worker work photos
+    match /workers/{workerId}/photos/{fileName} {
+      allow read: if true;
+      allow write: if isAuthenticated() && 
+                      request.auth.uid == workerId && 
+                      isImageFile() && 
+                      isValidSize();
+    }
+    
+    // Category icons
+    match /categories/{fileName} {
+      allow read: if true;
+      allow write: if false; // Only via admin
+    }
+  }
+}
